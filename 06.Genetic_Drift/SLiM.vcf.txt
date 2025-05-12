@@ -1,0 +1,42 @@
+// geno: genome fasta file, one chrom
+// vcf: vcf file to the chrom
+// chr: name of chr
+// rep: seq of run
+
+initialize() {
+	initializeSLiMOptions(nucleotideBased=T);
+	length = initializeAncestralNucleotides(geno);
+	defineConstant("L", length);
+	initializeMutationTypeNuc("m1", 0.5, "f", 0.0);
+	initializeRecombinationRate(1e-8);
+	initializeGenomicElementType("g1", m1, 1.0, mmJukesCantor(0.0));
+	initializeGenomicElement(g1, 0, L-1);
+}
+
+1 early() {
+	sim.addSubpop("p0", 20);
+	p0.genomes.readFromVCF(vcf, m1);
+	p0.setSubpopulationSize(100000);
+}
+
+2 early() {
+	sim.addSubpopSplit("p1", 36347, p0);
+	sim.addSubpopSplit("p2", 3935, p0);
+	sim.addSubpopSplit("p3", 100000, p0);
+	sim.addSubpopSplit("p4", 100000, p0);
+	sim.addSubpopSplit("p5", 46898, p0);
+    p0.setSubpopulationSize(0);
+}
+
+71 late() {
+    sample_sizes = c(20, 46, 48, 24, 23); 
+    output_file = chr + ".sim." + rep + ".vcf";
+    all = c();
+    for (pop in sim.subpopulations) {
+        sample_size = sample_sizes[pop.id-1];
+        p = sample(pop.individuals, sample_size);
+        all = c(all,p);
+    }
+    all.genomes.outputVCF(output_file,simplifyNucleotides=T);
+}
+
